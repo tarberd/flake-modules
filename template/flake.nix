@@ -7,5 +7,5 @@
   };
 
   outputs = inputs@{ flake-modules, ... }:
-    flake-modules.lib.evalFlake ./flake-modules.nix inputs;
+    flake-modules.lib.evalFlake ./. inputs;
 }

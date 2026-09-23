@@ -164,23 +164,21 @@ rec {
   # 6. Root flake evaluator
   evalFlake = arg1:
     let
-      run = rootPath: inputs:
+      run = rootDir: inputs:
         let
-          rootFile =
-            if builtins.pathExists (rootPath + "/flake-modules.nix") then
-              rootPath + "/flake-modules.nix"
-            else if builtins.pathExists rootPath then
-              if (builtins.readFileType or (_: "unknown")) rootPath == "directory" then
-                throw "flake-modules: Directory '${toString rootPath}' does not contain 'flake-modules.nix'."
+          rootFile = rootDir + "/flake-modules.nix";
+          resolvedRootFile =
+            if !builtins.pathExists rootFile then
+              if baseNameOf (toString rootDir) == "flake-modules.nix" then
+                throw "flake-modules: evalFlake expects a directory path containing 'flake-modules.nix' (e.g. evalFlake ./. inputs), but received file path '${toString rootDir}'."
               else
-                rootPath
+                throw "flake-modules: Directory '${toString rootDir}' does not contain 'flake-modules.nix'."
             else
-              throw "flake-modules: Entrypoint '${toString rootPath}' does not exist. Expected a file named 'flake-modules.nix' or a path to it.";
+              rootFile;
 
-          rootDir = builtins.dirOf rootFile;
-          declareNixosModule = declareNixosModuleFor rootFile;
+          declareNixosModule = declareNixosModuleFor resolvedRootFile;
 
-          raw = import rootFile;
+          raw = import resolvedRootFile;
 
           moduleArgs = sharedArgs // {
             self = selfRef;
@@ -199,7 +197,7 @@ rec {
             if builtins.isAttrs evaluated && evaluated ? __type && evaluated.__type == "flakeModule" then
               evaluated
             else
-              throw "Root module at '${toString rootFile}' did not evaluate to a FlakeModule. It must be declared using 'createFlakeModule'.";
+              throw "Root module at '${toString resolvedRootFile}' did not evaluate to a FlakeModule. It must be declared using 'createFlakeModule'.";
 
           evalSub = name:
             let
@@ -213,26 +211,24 @@ rec {
           allSubmodules = evaluatedPrivate // evaluatedPublic;
 
           sharedArgs = inputs;
-          selfRef = mergeSubmodules rootFile monad.content allSubmodules;
+          selfRef = mergeSubmodules resolvedRootFile monad.content allSubmodules;
           flakeRef = selfRef;
 
-          publicOutputs = mergeSubmodules rootFile monad.content evaluatedPublic;
+          publicOutputs = mergeSubmodules resolvedRootFile monad.content evaluatedPublic;
         in
           publicOutputs;
     in
       if builtins.isAttrs arg1 && arg1 ? inputs then
         let
-          rootPath =
-            if arg1 ? rootFile then
-              arg1.rootFile
-            else if arg1 ? rootDir then
+          rootDir =
+            if arg1 ? rootDir then
               arg1.rootDir
             else
-              throw "flake-modules.evalFlake: Attribute set invocation expects 'rootFile' or 'rootDir'.";
+              throw "flake-modules.evalFlake: Attribute set invocation expects 'rootDir'.";
         in
-          run rootPath arg1.inputs
+          run rootDir arg1.inputs
       else
-        # Curried invocation: evalFlake rootPath inputs
+        # Curried invocation: evalFlake rootDir inputs
         inputs: run arg1 inputs;
 
   # 7. High-level convenience alias
