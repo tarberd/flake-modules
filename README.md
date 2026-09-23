@@ -21,7 +21,7 @@ Most modular flake solutions (like `flake-parts`) use a flat, attribute-merging 
 | **Parent Scope** | `super::` | `super` | Access the immediate parent module's `self` scope. |
 | **Root Scope** | `crate::` | `flake` | Access the root namespace of the flake (all top-level modules). |
 | **Private Submodule** | `mod foo;` | `mod "foo"` | Submodule is evaluated and available to `self` and children, but **hidden** from external consumers. |
-| **Public Submodule** | `pub mod foo;` | `pubMod "foo"` | Submodule is evaluated and exported as part of the public API / flake outputs. |
+| **Public Submodule** | `pub mod foo;` | `pub mod "foo"` | Submodule is evaluated and exported as part of the public API / flake outputs. |
 | **External Deps** | `extern crate` | Function Arguments | External flake inputs (`nixpkgs`, `disko`, `home-manager`) passed directly as module arguments. |
 
 ---
@@ -57,7 +57,7 @@ Define your root module in `flake-modules.nix`:
 ```nix
 {
   createFlakeModule,
-  pubMod,
+  pub,
   mod,
   ...
 }:
@@ -66,8 +66,8 @@ mod "hosts"
 mod "users"
 
 # Public flake outputs exposed to the Nix CLI
-pubMod "packages"
-pubMod "nixosConfigurations"
+pub mod "packages"
+pub mod "nixosConfigurations"
 
 createFlakeModule {}
 ```
@@ -140,7 +140,7 @@ createFlakeModule (
 ## Core Guarantees & Invariants
 
 1. **Zero External Dependencies**: `flake-modules` is written entirely in pure Nix language primitives. It has an empty `inputs = {};` with zero dependency footprint.
-2. **Duplicate Declaration Protection**: Declaring a module twice (`pubMod "foo"` + `pubMod "foo"`, `mod "foo"` + `mod "foo"`, or `pubMod "foo"` + `mod "foo"`) throws an immediate collision error.
+2. **Duplicate Declaration Protection**: Declaring a module twice (`pub mod "foo"` + `pub mod "foo"`, `mod "foo"` + `mod "foo"`, or `pub mod "foo"` + `mod "foo"`) throws an immediate collision error.
 3. **Collision Detection**: If a module defines attribute keys in `content` that match declared submodule names, `flake-modules` throws an error to prevent silent attribute clobbering.
 4. **Early Validation**: Non-string module names are rejected with clear, actionable type error messages.
 5. **Function Lifting**: Functions passed to `createFlakeModule ({ lib, ... }: { ... })` are automatically lifted into callable functors (`__functor`), allowing child submodules to be attached as attributes while the function remains callable as a NixOS/Terranix module.

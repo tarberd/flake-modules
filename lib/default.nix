@@ -1,40 +1,56 @@
 rec {
-  # 1. Monadic builders: createFlakeModule, pubMod, mod
-  builder = priv: pub: op:
+  # 1. Monadic builders: createFlakeModule, pub, mod
+  builder = priv: pubList: op:
     if builtins.isAttrs op && op ? __type && op.__type == "createFlakeModule" then
       content: {
         __type = "flakeModule";
         privateModules = priv;
-        publicModules = pub;
+        publicModules = pubList;
         inherit content;
       }
-    else if builtins.isAttrs op && op ? __type && op.__type == "pubMod" then
-      name:
-        if !builtins.isString name then
-          throw "pubMod expects a string module name, received ${builtins.typeOf name}."
-        else if builtins.elem name (priv ++ pub) then
-          throw "Duplicate submodule declaration '${name}' in module definition."
-        else
-          builder priv (pub ++ [ name ])
     else if builtins.isAttrs op && op ? __type && op.__type == "mod" then
       name:
         if !builtins.isString name then
           throw "mod expects a string module name, received ${builtins.typeOf name}."
-        else if builtins.elem name (priv ++ pub) then
+        else if builtins.elem name (priv ++ pubList) then
           throw "Duplicate submodule declaration '${name}' in module definition."
         else
-          builder (priv ++ [ name ]) pub
+          builder (priv ++ [ name ]) pubList
+    else if builtins.isAttrs op && op ? __type && op.__type == "pub" then
+      subOp:
+        if !builtins.isAttrs subOp || !subOp ? __type || subOp.__type != "mod" then
+          throw "Expected 'mod' after 'pub' (e.g. pub mod \"name\"), received ${builtins.typeOf subOp}."
+        else
+          name:
+            if !builtins.isString name then
+              throw "pub mod expects a string module name, received ${builtins.typeOf name}."
+            else if builtins.elem name (priv ++ pubList) then
+              throw "Duplicate submodule declaration '${name}' in module definition."
+            else
+              builder priv (pubList ++ [ name ])
     else
-      throw "Unexpected combinator in module definition. Expected 'pubMod', 'mod', or 'createFlakeModule'.";
+      throw "Unexpected combinator in module definition. Expected 'mod', 'pub mod', or 'createFlakeModule'.";
 
-  pubMod = {
-    __type = "pubMod";
-    __functor = _: name: builder [] [] pubMod name;
+  pub = {
+    __type = "pub";
+    __functor = _: subOp:
+      if !builtins.isAttrs subOp || !subOp ? __type || subOp.__type != "mod" then
+        throw "Expected 'mod' after 'pub' (e.g. pub mod \"name\"), received ${builtins.typeOf subOp}."
+      else
+        name:
+          if !builtins.isString name then
+            throw "pub mod expects a string module name, received ${builtins.typeOf name}."
+          else
+            builder [] [ name ];
   };
 
   mod = {
     __type = "mod";
-    __functor = _: name: builder [] [] mod name;
+    __functor = _: name:
+      if !builtins.isString name then
+        throw "mod expects a string module name, received ${builtins.typeOf name}."
+      else
+        builder [ name ] [];
   };
 
   createFlakeModule = {
@@ -130,7 +146,7 @@ rec {
         self = selfRef;
         super = superRef;
         flake = flakeRef;
-        inherit createFlakeModule pubMod mod declareNixosModule;
+        inherit createFlakeModule pub mod declareNixosModule;
       };
 
       evaluated =
@@ -184,7 +200,7 @@ rec {
             self = selfRef;
             super = null;
             flake = flakeRef;
-            inherit createFlakeModule pubMod mod declareNixosModule;
+            inherit createFlakeModule pub mod declareNixosModule;
           };
 
           evaluated =
