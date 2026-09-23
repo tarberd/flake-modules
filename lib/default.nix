@@ -162,32 +162,79 @@ rec {
       publicRef;
 
   # 6. Root flake evaluator
-  evalFlake = rootDir: inputs: rootMonad:
+  evalFlake = arg1:
     let
-      evalRootSub = name:
+      run = rootPath: inputs:
         let
-          subPath = resolveSubmodule rootDir name;
+          rootFile =
+            if builtins.pathExists (rootPath + "/flake-modules.nix") then
+              rootPath + "/flake-modules.nix"
+            else if builtins.pathExists rootPath then
+              if (builtins.readFileType or (_: "unknown")) rootPath == "directory" then
+                throw "flake-modules: Directory '${toString rootPath}' does not contain 'flake-modules.nix'."
+              else
+                rootPath
+            else
+              throw "flake-modules: Entrypoint '${toString rootPath}' does not exist. Expected a file named 'flake-modules.nix' or a path to it.";
+
+          rootDir = builtins.dirOf rootFile;
+          declareNixosModule = declareNixosModuleFor rootFile;
+
+          raw = import rootFile;
+
+          moduleArgs = sharedArgs // {
+            self = selfRef;
+            super = null;
+            flake = flakeRef;
+            inherit createFlakeModule pubMod mod declareNixosModule;
+          };
+
+          evaluated =
+            if builtins.isFunction raw then
+              raw moduleArgs
+            else
+              raw;
+
+          monad =
+            if builtins.isAttrs evaluated && evaluated ? __type && evaluated.__type == "flakeModule" then
+              evaluated
+            else
+              throw "Root module at '${toString rootFile}' did not evaluate to a FlakeModule. It must be declared using 'createFlakeModule'.";
+
+          evalSub = name:
+            let
+              subPath = resolveSubmodule rootDir name;
+            in
+              evalModule subPath selfRef flakeRef sharedArgs;
+
+          evaluatedPrivate = evalSubmodules evalSub monad.privateModules;
+          evaluatedPublic = evalSubmodules evalSub monad.publicModules;
+
+          allSubmodules = evaluatedPrivate // evaluatedPublic;
+
+          sharedArgs = inputs;
+          selfRef = mergeSubmodules rootFile monad.content allSubmodules;
+          flakeRef = selfRef;
+
+          publicOutputs = mergeSubmodules rootFile monad.content evaluatedPublic;
         in
-          evalModule subPath null flakeRef sharedArgs;
-
-      evaluatedPrivateRoot = evalSubmodules evalRootSub rootMonad.privateModules;
-      evaluatedPublicRoot = evalSubmodules evalRootSub rootMonad.publicModules;
-
-      allRootModules = evaluatedPrivateRoot // evaluatedPublicRoot;
-
-      sharedArgs = inputs;
-      flakeRef = allRootModules;
-
-      publicOutputs = mergeSubmodules rootDir rootMonad.content evaluatedPublicRoot;
+          publicOutputs;
     in
-      publicOutputs;
-
-  # 7. High-level convenience wrapper
-  mkFlake = { inputs, rootDir, root }:
-    evalFlake rootDir inputs (
-      if builtins.isFunction root then
-        root { inherit pubMod mod createFlakeModule; }
+      if builtins.isAttrs arg1 && arg1 ? inputs then
+        let
+          rootPath =
+            if arg1 ? rootFile then
+              arg1.rootFile
+            else if arg1 ? rootDir then
+              arg1.rootDir
+            else
+              throw "flake-modules.evalFlake: Attribute set invocation expects 'rootFile' or 'rootDir'.";
+        in
+          run rootPath arg1.inputs
       else
-        root
-    );
+        # Curried invocation: evalFlake rootPath inputs
+        inputs: run arg1 inputs;
+
+  # 7. High-level convenience alias
+  mkFlake = evalFlake;
 }

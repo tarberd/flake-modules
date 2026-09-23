@@ -6,12 +6,6 @@
     flake-modules.url = "github:tarberd/flake-modules";
   };
 
-  outputs = { self, flake-modules, ... }@inputs:
-    flake-modules.lib.mkFlake {
-      inherit inputs;
-      rootDir = ./.;
-      root = { mod, pubMod, createFlakeModule }:
-        pubMod "packages"
-        createFlakeModule {};
-    };
+  outputs = inputs@{ flake-modules, ... }:
+    flake-modules.lib.evalFlake ./flake-modules.nix inputs;
 }

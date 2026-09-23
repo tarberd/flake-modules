@@ -34,9 +34,9 @@ Most modular flake solutions (like `flake-parts`) use a flat, attribute-merging 
 nix flake init -t github:tarberd/flake-modules
 ```
 
-### 2. Manual Setup in `flake.nix`
+### 2. Manual Setup
 
-Add `flake-modules` to your inputs:
+Add `flake-modules` to your `flake.nix`:
 
 ```nix
 {
@@ -47,22 +47,29 @@ Add `flake-modules` to your inputs:
     flake-modules.url = "github:tarberd/flake-modules";
   };
 
-  outputs = { self, flake-modules, ... }@inputs:
-    flake-modules.lib.mkFlake {
-      inherit inputs;
-      rootDir = ./.;
-      root = { mod, pubMod, createFlakeModule }:
-        # Internal private project modules (accessible via `flake.<name>`)
-        mod "hosts"
-        mod "users"
-
-        # Public flake outputs exposed to the Nix CLI
-        pubMod "packages"
-        pubMod "nixosConfigurations"
-
-        createFlakeModule {};
-    };
+  outputs = inputs@{ flake-modules, ... }:
+    flake-modules.lib.evalFlake ./flake-modules.nix inputs;
 }
+```
+
+Define your root module in `flake-modules.nix`:
+
+```nix
+{
+  createFlakeModule,
+  pubMod,
+  mod,
+  ...
+}:
+# Internal private project modules (accessible across flake via `flake.<name>`)
+mod "hosts"
+mod "users"
+
+# Public flake outputs exposed to the Nix CLI
+pubMod "packages"
+pubMod "nixosConfigurations"
+
+createFlakeModule {}
 ```
 
 ---
