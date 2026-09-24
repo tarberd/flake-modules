@@ -22,6 +22,8 @@ jobs:
 
       - name: Magic Nix Cache
         uses: DeterminateSystems/magic-nix-cache-action@main
+        with:
+          use-flakehub: false
 
       - name: Verify Root Flake Schema & Zero Dependencies
         run: nix flake check --show-trace
@@ -42,6 +44,8 @@ jobs:
 
       - name: Magic Nix Cache
         uses: DeterminateSystems/magic-nix-cache-action@main
+        with:
+          use-flakehub: false
 
       - name: Run Flake Unit & Integration Checks
         run: nix flake check ./tests --show-trace
