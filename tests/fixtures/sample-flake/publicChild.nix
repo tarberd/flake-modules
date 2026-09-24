@@ -1,0 +1,4 @@
+{ createFlakeModule, ... }:
+createFlakeModule {
+  publicVal = "public";
+}

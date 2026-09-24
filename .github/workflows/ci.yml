@@ -1,0 +1,41 @@
+name: "CI"
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  check-root-flake:
+    name: "Zero-Dependency Check"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: determinate-systems/nix-installer-action@v16
+
+      - name: Magic Nix Cache
+        uses: determinate-systems/magic-nix-cache-action@v13
+
+      - name: Verify Root Flake Schema & Zero Dependencies
+        run: nix flake check --show-trace
+
+  run-unit-tests:
+    name: "nix-unit Test Suite & NixOS Matrix"
+    runs-on: ubuntu-latest
+    needs: check-root-flake
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: determinate-systems/nix-installer-action@v16
+
+      - name: Magic Nix Cache
+        uses: determinate-systems/magic-nix-cache-action@v13
+
+      - name: Run Flake Unit & Integration Checks
+        run: nix flake check ./tests --show-trace
