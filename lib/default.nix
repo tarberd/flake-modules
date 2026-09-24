@@ -81,24 +81,64 @@ rec {
   # 3. NixOS module key/file stamping helper
   declareNixosModuleFor = filePath:
     let
-      fileKey = builtins.hashString "sha256" (toString filePath);
+      pathStr = toString filePath;
     in
       module:
-        if builtins.isFunction module then
-          {
-            __functor = _functorSelf: moduleArgs: (module moduleArgs) // {
-              key = fileKey;
-              _file = toString filePath;
-            };
-            __functionArgs = builtins.functionArgs module;
-          }
-        else if builtins.isAttrs module then
-          module // {
-            key = fileKey;
-            _file = toString filePath;
-          }
-        else
-          throw "declareNixosModule at '${toString filePath}' expects a function or attribute set, received ${builtins.typeOf module}.";
+        let
+          modKey = if builtins.isAttrs module && module ? key then toString module.key else pathStr;
+          modFile = if builtins.isAttrs module && module ? _file then toString module._file else pathStr;
+        in
+          if builtins.isFunction module then
+            {
+              __functor = _functorSelf: moduleArgs:
+                let
+                  res = module moduleArgs;
+                in
+                  {
+                    key = modKey;
+                    _file = modFile;
+                  } // res // {
+                    key = res.key or modKey;
+                    _file = res._file or modFile;
+                  };
+              __functionArgs = builtins.functionArgs module;
+              key = modKey;
+              _file = modFile;
+            }
+          else if builtins.isAttrs module then
+            if module ? __functor then
+              {
+                __functor = _functorSelf: moduleArgs:
+                  let
+                    res = module moduleArgs;
+                  in
+                    {
+                      key = modKey;
+                      _file = modFile;
+                    } // res // {
+                      key = res.key or modKey;
+                      _file = res._file or modFile;
+                    };
+                __functionArgs = module.__functionArgs or {};
+                key = modKey;
+                _file = modFile;
+              }
+            else
+              {
+                __functor = _functorSelf: _moduleArgs:
+                  {
+                    key = modKey;
+                    _file = modFile;
+                  } // module // {
+                    key = module.key or modKey;
+                    _file = module._file or modFile;
+                  };
+                __functionArgs = {};
+                key = modKey;
+                _file = modFile;
+              }
+          else
+            throw "declareNixosModule at '${pathStr}' expects a function or attribute set, received ${builtins.typeOf module}.";
 
   # 4. Helper to merge submodules onto content
   mergeSubmodules = contextPath: base: subs:
