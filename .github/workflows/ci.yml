@@ -9,16 +9,17 @@ on:
 jobs:
   check-root-flake:
     name: "Zero-Dependency Check"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
-      id-token: "write"
       contents: "read"
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
+        with:
+          determinate: false
 
       - name: Magic Nix Cache
         uses: DeterminateSystems/magic-nix-cache-action@main
@@ -30,17 +31,18 @@ jobs:
 
   run-unit-tests:
     name: "nix-unit Test Suite & NixOS Matrix"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: check-root-flake
     permissions:
-      id-token: "write"
       contents: "read"
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
+        with:
+          determinate: false
 
       - name: Magic Nix Cache
         uses: DeterminateSystems/magic-nix-cache-action@main
