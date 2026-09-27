@@ -1,7 +1,7 @@
 {
   description = "A declarative, Rust-inspired module system for Nix flakes";
 
-  inputs = {};
+  inputs = { };
 
   outputs = { self }: {
     lib = import ./lib;

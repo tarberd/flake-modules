@@ -305,6 +305,19 @@ Everything else, `mkFlakeModule` included, reaches modules as [module arguments]
 
 ---
 
+## Development
+
+The test suite and the formatter live in the `tests` flake, which pins nixpkgs so that the root flake can stay free of inputs:
+
+```bash
+nix flake check ./tests   # unit tests and formatting check (what CI runs)
+cd tests && nix fmt       # format every .nix file in the repository
+```
+
+`nix fmt` must run from `tests/`, but it formats the whole repository: `nixfmt-tree` walks the enclosing git repository.
+
+---
+
 ## License
 
 MIT or Apache-2.0

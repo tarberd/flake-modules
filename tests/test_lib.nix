@@ -49,7 +49,9 @@ in
 
   test_builder_leaf_attrs = {
     expr = (mkFlakeModule { } { say = "hello world"; }).content;
-    expected = { say = "hello world"; };
+    expected = {
+      say = "hello world";
+    };
   };
 
   test_builder_leaf_function = {
@@ -66,15 +68,18 @@ in
         inherit (m) publicModules privateModules;
       };
     expected = {
-      publicModules = [];
-      privateModules = [];
+      publicModules = [ ];
+      privateModules = [ ];
     };
   };
 
   test_builder_children = {
     expr =
       let
-        m = mkFlakeModule { public = [ fileMod ]; private = [ dirMod ]; } { };
+        m = mkFlakeModule {
+          public = [ fileMod ];
+          private = [ dirMod ];
+        } { };
       in
       {
         public = childNames m.publicModules;
@@ -88,7 +93,9 @@ in
 
   test_builder_parent_attrs = {
     expr = (mkFlakeModule { public = [ fileMod ]; } { a = 1; }).content;
-    expected = { a = 1; };
+    expected = {
+      a = 1;
+    };
   };
 
   test_builder_parent_function = {
@@ -147,7 +154,8 @@ in
   test_error_builder_nixos_reserved_child_name = {
     # withNixosModule content already defines key and _file; detected before
     # the file system is consulted
-    expr = (mkFlakeModule.withNixosModule { public = [ (resolutionDir + "/_file.nix") ]; } { }).publicModules;
+    expr =
+      (mkFlakeModule.withNixosModule { public = [ (resolutionDir + "/_file.nix") ]; } { }).publicModules;
     expectedError = {
       type = "ThrownError";
       msg = "Submodule name '_file' declared in '.*' is reserved by mkFlakeModule.withNixosModule";
@@ -203,7 +211,13 @@ in
   };
 
   test_error_duplicate_same_list = {
-    expr = (mkFlakeModule { public = [ fileMod fileMod ]; } { }).publicModules;
+    expr =
+      (mkFlakeModule {
+        public = [
+          fileMod
+          fileMod
+        ];
+      } { }).publicModules;
     expectedError = {
       type = "ThrownError";
       msg = "Duplicate submodule declaration 'file-mod'";
@@ -211,7 +225,11 @@ in
   };
 
   test_error_duplicate_across_lists = {
-    expr = (mkFlakeModule { public = [ fileMod ]; private = [ fileMod ]; } { }).privateModules;
+    expr =
+      (mkFlakeModule {
+        public = [ fileMod ];
+        private = [ fileMod ];
+      } { }).privateModules;
     expectedError = {
       type = "ThrownError";
       msg = "Duplicate submodule declaration 'file-mod'";
@@ -220,7 +238,13 @@ in
 
   test_error_duplicate_file_and_dir = {
     # Duplicate names are detected before the file system is consulted
-    expr = (mkFlakeModule { public = [ fileMod (resolutionDir + "/file-mod") ]; } { }).publicModules;
+    expr =
+      (mkFlakeModule {
+        public = [
+          fileMod
+          (resolutionDir + "/file-mod")
+        ];
+      } { }).publicModules;
     expectedError = {
       type = "ThrownError";
       msg = "Duplicate submodule declaration 'file-mod'";
@@ -376,13 +400,18 @@ in
   # =========================================================================
 
   test_merge_empty_submodules = {
-    expr = internal.mergeSubmodules "/context" { a = 1; } {};
-    expected = { a = 1; };
+    expr = internal.mergeSubmodules "/context" { a = 1; } { };
+    expected = {
+      a = 1;
+    };
   };
 
   test_merge_attrs = {
     expr = internal.mergeSubmodules "/context" { a = 1; } { b = 2; };
-    expected = { a = 1; b = 2; };
+    expected = {
+      a = 1;
+      b = 2;
+    };
   };
 
   test_merge_function_functor = {
@@ -476,11 +505,19 @@ in
   test_nixos_eval_deduplication = {
     expr =
       let
-        mod = internal.declareNixosModuleFor "/test/dedup.nix" ({ lib, ... }: {
-          options.testDedup = lib.mkOption { type = lib.types.str; default = "passed"; };
-        });
+        mod = internal.declareNixosModuleFor "/test/dedup.nix" (
+          { lib, ... }: {
+            options.testDedup = lib.mkOption {
+              type = lib.types.str;
+              default = "passed";
+            };
+          }
+        );
         eval = pkgs.lib.evalModules {
-          modules = [ mod mod ];
+          modules = [
+            mod
+            mod
+          ];
         };
       in
       eval.config.testDedup;
@@ -490,9 +527,14 @@ in
   test_nixos_disabled_modules_path = {
     expr =
       let
-        mod = internal.declareNixosModuleFor "/test/disabled.nix" ({ lib, ... }: {
-          options.testDisabled = lib.mkOption { type = lib.types.str; default = "enabled"; };
-        });
+        mod = internal.declareNixosModuleFor "/test/disabled.nix" (
+          { lib, ... }: {
+            options.testDisabled = lib.mkOption {
+              type = lib.types.str;
+              default = "enabled";
+            };
+          }
+        );
         eval = pkgs.lib.evalModules {
           modules = [
             mod
@@ -507,9 +549,14 @@ in
   test_nixos_disabled_modules_ref = {
     expr =
       let
-        mod = internal.declareNixosModuleFor "/test/disabled.nix" ({ lib, ... }: {
-          options.testDisabled = lib.mkOption { type = lib.types.str; default = "enabled"; };
-        });
+        mod = internal.declareNixosModuleFor "/test/disabled.nix" (
+          { lib, ... }: {
+            options.testDisabled = lib.mkOption {
+              type = lib.types.str;
+              default = "enabled";
+            };
+          }
+        );
         eval = pkgs.lib.evalModules {
           modules = [
             mod
@@ -524,11 +571,18 @@ in
   test_nixos_submodule_isolation = {
     expr =
       let
-        attrMod = (internal.declareNixosModuleFor "/test/attr.nix" {
-          options.foo = pkgs.lib.mkOption { type = pkgs.lib.types.int; default = 42; };
-        }) // {
-          attachedSub = { kind = "isolated"; };
-        };
+        attrMod =
+          (internal.declareNixosModuleFor "/test/attr.nix" {
+            options.foo = pkgs.lib.mkOption {
+              type = pkgs.lib.types.int;
+              default = 42;
+            };
+          })
+          // {
+            attachedSub = {
+              kind = "isolated";
+            };
+          };
         eval = pkgs.lib.evalModules {
           modules = [ attrMod ];
         };
@@ -549,11 +603,14 @@ in
 
   test_public_api = {
     expr = builtins.attrNames lib;
-    expected = [ "evalFlake" "mkFlake" ];
+    expected = [
+      "evalFlake"
+      "mkFlake"
+    ];
   };
 
   test_eval_flake_missing_entrypoint = {
-    expr = lib.evalFlake (fixtures + "/empty-dir") {};
+    expr = lib.evalFlake (fixtures + "/empty-dir") { };
     expectedError = {
       type = "ThrownError";
       msg = "Directory '.*' does not contain 'flake-modules.nix'.";
@@ -561,7 +618,7 @@ in
   };
 
   test_eval_flake_file_path_error = {
-    expr = lib.evalFlake (fixtures + "/sample-flake/flake-modules.nix") {};
+    expr = lib.evalFlake (fixtures + "/sample-flake/flake-modules.nix") { };
     expectedError = {
       type = "ThrownError";
       msg = "evalFlake expects a directory path containing 'flake-modules.nix'.*but received file path";
@@ -571,7 +628,7 @@ in
   test_eval_flake_privacy_and_scopes = {
     expr =
       let
-        outputs = lib.evalFlake (fixtures + "/sample-flake") {};
+        outputs = lib.evalFlake (fixtures + "/sample-flake") { };
       in
       {
         hasPublicChild = outputs ? publicChild;
@@ -599,7 +656,7 @@ in
       let
         outputs = lib.evalFlake {
           rootDir = fixtures + "/sample-flake";
-          inputs = {};
+          inputs = { };
         };
       in
       outputs.publicChild.publicVal;
@@ -610,7 +667,7 @@ in
     # alice/bob.nix declares its child as ./bob/charlie.nix
     expr =
       let
-        outputs = lib.evalFlake (fixtures + "/layouts/file-layout") {};
+        outputs = lib.evalFlake (fixtures + "/layouts/file-layout") { };
       in
       {
         hasPrivateCharlie = outputs.alice.bob ? charlie;
@@ -632,7 +689,7 @@ in
     # alice/bob/default.nix declares its child as ./charlie.nix
     expr =
       let
-        outputs = lib.evalFlake (fixtures + "/layouts/dir-layout") {};
+        outputs = lib.evalFlake (fixtures + "/layouts/dir-layout") { };
       in
       {
         hasPrivateCharlie = outputs.alice.bob ? charlie;
@@ -653,7 +710,7 @@ in
   test_eval_flake_nixos_keys = {
     expr =
       let
-        outputs = lib.evalFlake (fixtures + "/nixos") {};
+        outputs = lib.evalFlake (fixtures + "/nixos") { };
       in
       {
         leafKey = outputs.leaf.key;
@@ -671,9 +728,12 @@ in
     # The parent's attached child must stay invisible to evalModules
     expr =
       let
-        outputs = lib.evalFlake (fixtures + "/nixos") {};
+        outputs = lib.evalFlake (fixtures + "/nixos") { };
         eval = pkgs.lib.evalModules {
-          modules = [ outputs.leaf outputs.parent ];
+          modules = [
+            outputs.leaf
+            outputs.parent
+          ];
         };
       in
       {
@@ -694,13 +754,19 @@ in
       someInput = "input";
     };
     expected = {
-      argNames = [ "flake" "mkFlakeModule" "self" "someInput" "super" ];
+      argNames = [
+        "flake"
+        "mkFlakeModule"
+        "self"
+        "someInput"
+        "super"
+      ];
       selfIsModuleScope = true;
     };
   };
 
   test_eval_flake_error_not_function = {
-    expr = lib.evalFlake (fixtures + "/errors/not-function") {};
+    expr = lib.evalFlake (fixtures + "/errors/not-function") { };
     expectedError = {
       type = "ThrownError";
       msg = "must be a function taking module arguments, received set";
@@ -708,7 +774,7 @@ in
   };
 
   test_eval_flake_error_not_flake_module = {
-    expr = lib.evalFlake (fixtures + "/errors/not-flake-module") {};
+    expr = lib.evalFlake (fixtures + "/errors/not-flake-module") { };
     expectedError = {
       type = "ThrownError";
       msg = "did not evaluate to a flake module";
@@ -716,7 +782,7 @@ in
   };
 
   test_eval_flake_error_builder_returned = {
-    expr = lib.evalFlake (fixtures + "/errors/builder-returned") {};
+    expr = lib.evalFlake (fixtures + "/errors/builder-returned") { };
     expectedError = {
       type = "ThrownError";
       msg = "is missing its content: it evaluated to the mkFlakeModule builder";
@@ -724,7 +790,7 @@ in
   };
 
   test_eval_flake_error_missing_content = {
-    expr = lib.evalFlake (fixtures + "/errors/missing-content") {};
+    expr = lib.evalFlake (fixtures + "/errors/missing-content") { };
     expectedError = {
       type = "ThrownError";
       msg = "is missing its content: it evaluated to a function";
@@ -738,7 +804,7 @@ in
   test_template_evaluates = {
     expr =
       let
-        outputs = lib.evalFlake templatePath {};
+        outputs = lib.evalFlake templatePath { };
       in
       outputs ? packages;
     expected = true;

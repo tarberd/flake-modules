@@ -6,6 +6,5 @@
     flake-modules.url = "github:tarberd/flake-modules";
   };
 
-  outputs = inputs@{ flake-modules, ... }:
-    flake-modules.lib.evalFlake ./. inputs;
+  outputs = inputs@{ flake-modules, ... }: flake-modules.lib.evalFlake ./. inputs;
 }
