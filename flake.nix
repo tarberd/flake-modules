@@ -1,5 +1,5 @@
 {
-  description = "A declarative, Rust-inspired monadic module system for Nix flakes";
+  description = "A declarative, Rust-inspired module system for Nix flakes";
 
   inputs = {};
 

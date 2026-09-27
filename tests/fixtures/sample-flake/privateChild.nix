@@ -1,5 +1,11 @@
-{ createFlakeModule, self, super, flake, ... }:
-createFlakeModule {
+{
+  mkFlakeModule,
+  self,
+  super,
+  flake,
+  ...
+}:
+mkFlakeModule { } {
   privateVal = "private";
   canSeePublic = flake.publicChild.publicVal;
   rootIsSuper = super.rootVal;

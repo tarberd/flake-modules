@@ -1,6 +1,10 @@
-{ createFlakeModule, pub, mod, ... }:
-pub mod "publicChild"
-mod "privateChild"
-createFlakeModule {
-  rootVal = "root";
-}
+{ mkFlakeModule, self, ... }:
+mkFlakeModule
+  {
+    public = [ ./publicChild.nix ];
+    private = [ ./privateChild.nix ];
+  }
+  {
+    rootVal = "root";
+    privateView = self.privateChild;
+  }

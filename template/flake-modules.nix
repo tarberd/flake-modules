@@ -1,9 +1,1 @@
-{
-  createFlakeModule,
-  pub,
-  mod,
-  ...
-}:
-pub mod "packages"
-
-createFlakeModule {}
+{ mkFlakeModule, ... }: mkFlakeModule { public = [ ./packages ]; } { }

@@ -39,6 +39,7 @@
             export HOME=$PWD
             nix-unit --eval-store "$PWD" ${./.}/test_lib.nix \
               --arg lib "import ${flake-modules}/lib" \
+              --arg internal "import ${flake-modules}/lib/internal.nix" \
               --arg pkgs "import ${nixpkgs} { system = \"${system}\"; }" \
               --arg templatePath "${flake-modules}/template"
             touch $out

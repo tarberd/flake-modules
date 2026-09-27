@@ -1,4 +1,1 @@
-{ createFlakeModule, ... }:
-createFlakeModule {
-  kind = "file";
-}
+{ mkFlakeModule, ... }: mkFlakeModule { } { kind = "file"; }

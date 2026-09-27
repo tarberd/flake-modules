@@ -1,4 +1,1 @@
-{ createFlakeModule, ... }:
-createFlakeModule {
-  kind = "ambiguous-dir";
-}
+{ mkFlakeModule, ... }: mkFlakeModule { } { kind = "ambiguous-dir"; }

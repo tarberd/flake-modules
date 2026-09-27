@@ -1,4 +1,1 @@
-{ createFlakeModule, ... }:
-createFlakeModule {
-  publicVal = "public";
-}
+{ mkFlakeModule, ... }: mkFlakeModule { } { publicVal = "public"; }

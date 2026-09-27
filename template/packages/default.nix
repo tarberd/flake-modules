@@ -1,5 +1,5 @@
 {
-  createFlakeModule,
+  mkFlakeModule,
   nixpkgs,
   ...
 }:
@@ -7,6 +7,6 @@ let
   system = "x86_64-linux";
   pkgs = nixpkgs.legacyPackages.${system};
 in
-createFlakeModule {
+mkFlakeModule { } {
   ${system}.default = pkgs.hello;
 }
